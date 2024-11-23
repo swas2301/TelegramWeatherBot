@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    table th {
+      background-color: #f4f4f4;
+    }
+    button {
+      padding: 5px 10px;
+      border: none;
+      background-color: #ff4d4d;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #ff1a1a;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin Panel</h1>
+  <h2>Update API Key</h2>
+<form id="update-api-key-form">
+  <label for="api-key">New API Key:</label>
+  <input type="text" id="api-key" name="apiKey" required />
+  <button type="submit">Update API Key</button>
+</form>
+  <h2>Subscribed Users</h2>
+  <table id="user-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>User ID</th>
+        <th>Username</th>
+        <th>Actions</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#if subscribedUsers.length}}
+        {{#each subscribedUsers}}
+          <tr id="user-{{this.userId}}">
+            <td>{{@index}}</td>
+            <td>{{this.userId}}</td>
+            <td>{{this.username}}</td>
+            <td>
+              <button class="delete-button" data-user-id="{{this.userId}}">Delete</button>
+            </td>
+            <td>
+  <button onclick="blockUser({{this.userId}})">Block</button>
+  
+</td>
+
+          </tr>
+        {{/each}}
+      {{else}}
+        <tr>
+          <td colspan="4">No subscribed users found.</td>
+        </tr>
+      {{/if}}
+    </tbody>
+  </table>
+
+  <script>
+    document.getElementById('update-api-key-form').addEventListener('submit', async (event) => {
+    event.preventDefault(); // Prevent form submission
+
+    const apiKey = document.getElementById('api-key').value;
+    const response = await fetch('/admin/update-api-key', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ apiKey }),
+    });
+
+    if (response.ok) {
+      alert('API key updated successfully!');
+    } else {
+      const errorData = await response.json();
+      alert(`Failed to update API key. Reason: ${errorData.message || 'Unknown error'}`);
+    }
+  });
+
+  
+    async function deleteUser(userId) {
+      const row = document.getElementById(`user-${userId}`);
+
+      // Confirm before deletion
+      if (!confirm(`Are you sure you want to delete user ID: ${userId}?`)) {
+        return;
+      }
+
+      try {
+        // Send DELETE request to the server
+        const response = await fetch(`/auth/delete/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          // Remove the row from the table and alert success
+          row.remove();
+          alert(`User ID: ${userId} has been deleted successfully.`);
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to delete user. Reason: ${errorData.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        alert(`An error occurred while deleting the user: ${error.message}`);
+      }
+    }
+
+    async function blockUser(userId) {
+  if (!confirm(`Are you sure you want to block user ID: ${userId}?`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/auth/block/${userId}`, { method: 'POST' });
+    const data = await response.json();
+
+    if (response.ok) {
+      // Update the row dynamically
+      const row = document.querySelector(`#user-${userId}`);
+      const actionCell = row.querySelector('td:last-child');
+
+      // Change button to "Unblock"
+      actionCell.innerHTML = `<button>Blocked User</button>`;
+      alert(data.message);
+    } else {
+      alert(`Failed to block user: ${data.message}`);
+    }
+  } catch (error) {
+    alert(`Error blocking user: ${error.message}`);
+  }
+}
+    // Attach event listeners to all delete buttons
+    document.addEventListener('DOMContentLoaded', () => {
+      const deleteButtons = document.querySelectorAll('.delete-button');
+
+      deleteButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const userId = button.getAttribute('data-user-id');
+          deleteUser(userId);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
