@@ -63,6 +63,7 @@ export class BotService {
       });
   
       this.bot.onText(/\/unsubscribe/, (msg) => {
+        
         if (!this.subscribedUsers.has(msg.chat.id)) {
           this.bot.sendMessage(msg.chat.id, 'You are not subscribed yet.');
           return;
@@ -74,6 +75,10 @@ export class BotService {
       });
   
       this.bot.onText(/\/setcity (.+)/, (msg, match) => {
+        if (this.blockedUsers.has(msg.chat.id)) {
+          this.bot.sendMessage(msg.chat.id, 'You are blocked by Admin.');
+          return;
+        }
         if (!this.subscribedUsers.has(msg.chat.id)) {
           this.bot.sendMessage(msg.chat.id, 'You need to subscribe first using /subscribe.');
           return;
@@ -85,6 +90,10 @@ export class BotService {
       });
   
       this.bot.onText(/\/weather/, async (msg) => {
+        if (this.blockedUsers.has(msg.chat.id)) {
+          this.bot.sendMessage(msg.chat.id, 'You are blocked by Admin.');
+          return;
+        }
         const city = this.userCities.get(msg.chat.id);
         if (city) {
           try {
